@@ -28,6 +28,8 @@ const replacements = {
   'pm\\.execution\\.skipRequest': 'bru.runner.skipRequest',
   'pm\\.execution\\.setNextRequest\\(null\\)': 'bru.runner.stopExecution()',
   'pm\\.execution\\.setNextRequest\\(\'null\'\\)': 'bru.runnere.stopExecution()',
+  'pm\\.sendRequest\\(': 'bru.sendRequest(',
+  'postman\\.sendRequest\\(': 'bru.sendRequest(',
 };
 
 const extendedReplacements = Object.keys(replacements).reduce((acc, key) => {
