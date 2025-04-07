@@ -376,8 +376,6 @@ const runSingleRequest = async function (
       } else {
         console.log(chalk.red(stripExtension(filename)) + chalk.dim(` (${err.message})`));
 
-        const shouldEscapeRequestData = shouldEscapeHTML(request.data);
-
         return {
           test: {
             filename: filename
@@ -386,7 +384,7 @@ const runSingleRequest = async function (
             method: request.method,
             url: request.url,
             headers: request.headers,
-            data: shouldEscapeRequestData ? escapeHTML(request?.data) : request?.data
+            data: shouldEscapeHTML(request.data) ? escapeHTML(request?.data) : request?.data
           },
           response: {
             status: null,
@@ -514,10 +512,6 @@ const runSingleRequest = async function (
     }
 
     let responseContentType = getContentType(response?.headers);
-    console.log('responseContentType', responseContentType);
-
-    const shouldEscapeRequestData = shouldEscapeHTML(request.data);
-    const shouldEscapeResponseData = shouldEscapeHTML(response.data);
 
     return {
       test: {
@@ -527,7 +521,7 @@ const runSingleRequest = async function (
         method: request.method,
         url: request.url,
         headers: request.headers,
-        data: shouldEscapeRequestData ? escapeHTML(request?.data) : request?.data,
+        data: shouldEscapeHTML(request.data) ? escapeHTML(request?.data) : request?.data,
       },
       response: {
         status: response.status,
@@ -535,7 +529,7 @@ const runSingleRequest = async function (
         headers: response.headers,
         data: responseContentType?.includes("image")
           ? "Response content hidden (image data)"
-          : shouldEscapeResponseData
+          : shouldEscapeHTML(response.data)
             ? escapeHTML(response.data)
             : response?.data,
         responseTime
