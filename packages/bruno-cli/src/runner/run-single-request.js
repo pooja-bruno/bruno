@@ -32,11 +32,20 @@ const onConsoleLog = (type, args) => {
 };
 
 const shouldEscapeHTML = (data) => {
-  return typeof data === 'string' && 
-    (data.includes("<html>") || 
-     data.includes("<script>") || 
-     data.includes("<iframe>") || 
-     data.includes("<object>"));
+  if (typeof data !== 'string') return false;
+
+  // Decode entities and normalize unicode before checking
+  const decoded = data
+    .replace(/&[#\w]+;/g, ' ') // Replaces HTML entities like &amp; &lt; &#39; etc with space
+    // Unicode® Technical Report #15: Unicode Normalization Forms
+    // https://www.unicode.org/reports/tr15/
+    .normalize('NFKC');
+
+  // Match any HTML tags (e.g., <div>, <script>, <span>, etc.)
+  const htmlTagPattern = /<[^>]+>/;
+
+  // If there's any HTML tag, return true
+  return htmlTagPattern.test(decoded);
 };
 
 const runSingleRequest = async function (
