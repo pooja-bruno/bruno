@@ -33,7 +33,7 @@ const onConsoleLog = (type, args) => {
 
 const shouldEscapeHTML = (data) => {
   if (typeof data !== 'string') return false;
-
+  
   // Decode entities and normalize unicode before checking
   const decoded = data
     .replace(/&[#\w]+;/g, ' ') // Replaces HTML entities like &amp; &lt; &#39; etc with space
@@ -511,7 +511,10 @@ const runSingleRequest = async function (
       });
     }
 
-    let responseContentType = getContentType(response?.headers);
+    let responseContentType = getContentType(response?.headers;
+                                             
+    const shouldEscapeRequestData = shouldEscapeHTML(request.data);
+    const shouldEscapeResponseData = shouldEscapeHTML(response.data);
 
     return {
       test: {
