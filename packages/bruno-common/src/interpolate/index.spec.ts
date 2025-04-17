@@ -1,5 +1,5 @@
 import interpolate from './index';
-
+import moment from 'moment';
 describe('interpolate', () => {
   it('should replace placeholders with values from the object', () => {
     const inputString = 'Hello, my name is {{user.name}} and I am {{user.age}} years old';
@@ -41,7 +41,7 @@ describe('interpolate', () => {
   Hi, I am {{user.full_name}},
   I am {{user.age}} years old.
   My favorite food is {{user.fav-food[0]}} and {{user.fav-food[1]}}.
-  I like attention: {{user.want.attention}}
+  I like attention: {{user['want.attention']}}
 `;
     const expectedStr = `
   Hi, I am Bruno,
@@ -67,19 +67,21 @@ describe('interpolate', () => {
     expect(result).toBe('Hello, my name is {{ user.name }} and I am 4 years old');
   });
 
-  it('should give precedence to the last key in case of duplicates', () => {
-    const inputString = 'Hello, my name is {{user.name}} and I am {{user.age}} years old';
+  test('should give precedence to the last key in case of duplicates (not at the top level)', () => {
+    const inputString = `Hello, my name is {{data['user.name']}} and {{data.user.name}} I am {{data.user.age}} years old`;
     const inputObject = {
-      'user.name': 'Bruno',
-      user: {
-        name: 'Not Bruno',
-        age: 4
+      data: {
+        'user.name': 'Bruno',
+        user: {
+          name: 'Not _Bruno_',
+          age: 4
+        }
       }
     };
 
     const result = interpolate(inputString, inputObject);
 
-    expect(result).toBe('Hello, my name is Not Bruno and I am 4 years old');
+    expect(result).toBe('Hello, my name is Bruno and Not _Bruno_ I am 4 years old');
   });
 });
 
@@ -238,7 +240,7 @@ describe('interpolate - recursive', () => {
   Hi, I am {{user.full_name}},
   I am {{user.age}} years old.
   My favorite food is {{user.fav-food[0]}} and {{user.fav-food[1]}}.
-  I like attention: {{user.want.attention}}
+  I like attention: {{user['want.attention']}}
 `;
     const inputObject = {
       user: {
@@ -356,21 +358,32 @@ describe('interpolate - recursive', () => {
 });
 
 describe('interpolate - object handling', () => {
-  it('should stringify simple objects when used as replacement values', () => {
-    const inputString = 'User data: {{user.data}}';
+  it('should stringify simple objects', () => {
+    const inputString = 'User: {{user}}';
+    const inputObject = {
+      'user': { name: 'Bruno', age: 4 }
+    };
+
+    const result = interpolate(inputString, inputObject);
+
+    expect(result).toBe('User: {"name":"Bruno","age":4}');
+  });
+
+  it('should stringify simple objects (dot notation)', () => {
+    const inputString = 'User: {{user.data}}';
     const inputObject = {
       'user.data': { name: 'Bruno', age: 4 }
     };
 
     const result = interpolate(inputString, inputObject);
 
-    expect(result).toBe('User data: {\n  "name": "Bruno",\n  "age": 4\n}');
+    expect(result).toBe('User: {"name":"Bruno","age":4}');
   });
 
-  it('should stringify nested objects when used as replacement values', () => {
-    const inputString = 'User data: {{user.data}}';
+  it('should stringify nested objects', () => {
+    const inputString = 'User: {{user}}';
     const inputObject = {
-      'user.data': { 
+      'user': { 
         name: 'Bruno', 
         age: 4,
         preferences: { 
@@ -382,35 +395,35 @@ describe('interpolate - object handling', () => {
 
     const result = interpolate(inputString, inputObject);
 
-    expect(result).toBe('User data: {\n  "name": "Bruno",\n  "age": 4,\n  "preferences": {\n    "food": [\n      "egg",\n      "meat"\n    ],\n    "toys": {\n      "favorite": "ball"\n    }\n  }\n}');
+    expect(result).toBe('User: {"name":"Bruno","age":4,"preferences":{"food":["egg","meat"],"toys":{"favorite":"ball"}}}');
   });
 
-  it('should stringify arrays when used as replacement values', () => {
-    const inputString = 'User favorites: {{user.favorites}}';
+  it('should stringify arrays', () => {
+    const inputString = 'User favorites: {{favorites}}';
     const inputObject = {
-      'user.favorites': ['egg', 'meat', 'treats']
+      favorites: ['egg', 'meat', 'treats']
     };
 
     const result = interpolate(inputString, inputObject);
 
-    expect(result).toBe('User favorites: [\n  "egg",\n  "meat",\n  "treats"\n]');
+    expect(result).toBe('User favorites: ["egg","meat","treats"]');
   });
 
   it('should handle null values correctly', () => {
-    const inputString = 'User data: {{user.data}}';
+    const inputString = 'User: {{user}}';
     const inputObject = {
-      'user.data': null
+      'user': null
     };
 
     const result = interpolate(inputString, inputObject);
 
-    expect(result).toBe('User data: null');
+    expect(result).toBe('User: null');
   });
 
   it('should handle objects with nested interpolation', () => {
-    const inputString = 'User data: {{user.data}}';
+    const inputString = 'User: {{user}}';
     const inputObject = {
-      'user.data': { 
+      'user': { 
         name: 'Bruno', 
         message: '{{user.greeting}}'
       },
@@ -419,13 +432,13 @@ describe('interpolate - object handling', () => {
 
     const result = interpolate(inputString, inputObject);
 
-    expect(result).toBe('User data: {\n  "name": "Bruno",\n  "message": "Hello there!"\n}');
+    expect(result).toBe('User: {"name":"Bruno","message":"Hello there!"}');
   });
 
   it('should handle objects within arrays', () => {
-    const inputString = 'User items: {{user.items}}';
+    const inputString = 'Items: {{items}}';
     const inputObject = {
-      'user.items': [
+      'items': [
         { id: 1, name: 'Toy' },
         { id: 2, name: 'Bone' },
         { id: 3, name: 'Ball', colors: ['red', 'blue'] }
@@ -434,7 +447,7 @@ describe('interpolate - object handling', () => {
 
     const result = interpolate(inputString, inputObject);
 
-    expect(result).toBe('User items: [\n  {\n    "id": 1,\n    "name": "Toy"\n  },\n  {\n    "id": 2,\n    "name": "Bone"\n  },\n  {\n    "id": 3,\n    "name": "Ball",\n    "colors": [\n      "red",\n      "blue"\n    ]\n  }\n]');
+    expect(result).toBe('Items: [{"id":1,"name":"Toy"},{"id":2,"name":"Bone"},{"id":3,"name":"Ball","colors":["red","blue"]}]');
   });
 });
 
@@ -502,3 +515,59 @@ describe('interpolate - mock variable interpolation', () => {
     }).toThrow();
   });
 });
+
+describe('interpolate - Date() handling', () => {
+  it('should interpolate Date() using JSON.stringify', () => {
+    const inputString = 'Date is {{date}}';
+    const inputObject = {
+      date: new Date("2025-04-17T15:33:41.117Z")
+    };
+
+    const jsonStringifiedDate = JSON.stringify(inputObject.date);
+    const result = interpolate(inputString, inputObject);
+
+    expect(result).toBe('Date is "2025-04-17T15:33:41.117Z"');
+    expect(result).toBe(`Date is ${jsonStringifiedDate}`);
+  })
+
+  it('should interpolate Date() when its nested in an object', () => {
+    const inputString = 'Date is {{date}}';
+    const inputObject = {
+      date: {
+        now: new Date("2025-04-17T15:33:41.117Z")
+      }
+    };
+
+    const result = interpolate(inputString, inputObject);
+
+    expect(result).toBe('Date is {"now":"2025-04-17T15:33:41.117Z"}');
+  })
+});
+
+describe('interpolate - moment() handling', () => {
+  it('should interpolate moment() using JSON.stringify', () => {
+    const inputString = 'Date is {{date}}';
+    const inputObject = {
+      date: moment("2025-04-17T15:33:41.117Z")
+    };
+
+    const jsonStringifiedDate = JSON.stringify(inputObject.date);
+    const result = interpolate(inputString, inputObject);
+
+    expect(result).toBe('Date is "2025-04-17T15:33:41.117Z"');
+    expect(result).toBe(`Date is ${jsonStringifiedDate}`);
+  })
+
+  it('should interpolate moment() when its nested in an object', () => {
+    const inputString = 'Date is {{date}}';
+    const inputObject = {
+      date: {
+        now: moment("2025-04-17T15:33:41.117Z")
+      }
+    };
+
+    const result = interpolate(inputString, inputObject);
+
+    expect(result).toBe('Date is {"now":"2025-04-17T15:33:41.117Z"}');
+  })
+})
