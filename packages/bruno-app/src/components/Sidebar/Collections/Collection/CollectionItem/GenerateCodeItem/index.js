@@ -223,7 +223,6 @@ const GenerateCodeItem = ({ collectionUid, item, onClose }) => {
   // Resolve auth inheritance
   const resolvedRequest = resolveInheritedAuth(item, collection);
 
-  const [selectedLanguage, setSelectedLanguage] = useState(languages[0]);
   return (
     <Modal size="lg" title="Generate Code" handleCancel={onClose} hideFooter={true}>
       <StyledWrapper>
